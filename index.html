@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YouTube Style Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a film-slate workbench — inputs on the left slate, the breakdown as a numbered shot list on the right; one column on phones. */
+:root{
+  --bg:#ECEEF1; --panel:#F8F9FA; --ink:#15181D; --muted:#5D6470; --line:#D3D7DE;
+  --accent:#B9800F; --accent-ink:#1A1204; --accent-soft:#F3E6C7; --danger:#B4372B; --ok:#2F7D4F;
+  --display:"Familjen Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121418; --panel:#1A1D23; --ink:#E7E9EC; --muted:#9BA2AE; --line:#2C313A;
+  --accent:#E0A631; --accent-ink:#1A1204; --accent-soft:#3A2F17; --danger:#E3685B; --ok:#5BC48A; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+img{max-width:100%}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.slate{display:flex;gap:3px;margin-bottom:8px}
+.slate i{width:22px;height:8px;background:var(--ink);transform:skewX(-30deg)}
+.slate i:nth-child(even){background:var(--accent)}
+h1{font-family:var(--display);font-size:clamp(28px,5vw,44px);line-height:1;margin:0;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.layout{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;display:grid;gap:14px;min-width:0}
+details.panel summary{cursor:pointer;font-family:var(--display);font-weight:700;font-size:16px}
+label,.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],input[type=password],input[type=url],input[type=number],textarea,select{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:9px 10px}
+textarea{resize:vertical;min-height:70px}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+.keystate{font-family:var(--mono);font-size:11px}
+.keystate.ok{color:var(--ok)}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:4px;padding:10px 14px;font-weight:600;font-size:14px}
+.btn.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);width:100%;font-family:var(--display);font-size:17px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);padding:7px 11px;font-size:13px;font-weight:500}
+.btn:disabled{opacity:.5;cursor:default}
+.inline{display:flex;gap:8px}
+.inline input{flex:1;min-width:0}
+.status{font-family:var(--mono);font-size:12px;color:var(--muted);min-height:1.2em}
+.status.err{color:var(--danger)}
+.vids{display:grid;gap:8px}
+.vid{display:grid;grid-template-columns:22px 112px minmax(0,1fr);gap:10px;align-items:start;border:1px solid var(--line);border-radius:4px;padding:8px;background:var(--bg);cursor:pointer}
+.vid.sel{border-color:var(--accent);background:var(--accent-soft)}
+.vid img{width:112px;aspect-ratio:16/9;object-fit:cover;border-radius:3px;display:block}
+.vid .t{font-size:13.5px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.vid .m{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+.vid input{margin-top:4px;accent-color:var(--accent)}
+.out{display:grid;gap:18px;min-width:0}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:var(--accent-soft);color:var(--ink);padding:3px 8px;border-radius:3px}
+h2{font-family:var(--display);font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h3{font-family:var(--display);font-size:16px;margin:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.grid2>div{background:var(--panel);padding:12px 14px;min-width:0}
+.grid2 p{margin:0;font-size:14px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.swatches span{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px}
+.swatches b{width:18px;height:18px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.prompt{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.pk{display:grid;gap:6px}
+.pk .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.copy{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:3px;font-family:var(--mono);font-size:11px;padding:3px 8px}
+.shot{border:1px solid var(--line);border-radius:6px;background:var(--panel);display:grid;grid-template-columns:64px minmax(0,1fr)}
+.shot .num{border-right:1px solid var(--line);padding:12px 8px;text-align:center;font-family:var(--mono)}
+.shot .num b{display:block;font-family:var(--display);font-size:24px;line-height:1}
+.shot .num small{font-size:10.5px;color:var(--muted);letter-spacing:.06em;display:block}
+.shot .body{padding:12px 14px;display:grid;gap:10px;min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.meta span{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:3px;padding:2px 6px;color:var(--muted)}
+.vo{font-size:15px;border-left:3px solid var(--accent);padding-left:10px}
+.chars{display:grid;gap:10px}
+ul.titles{margin:0;padding-left:18px}
+.note{font-size:13px;color:var(--muted);background:var(--accent-soft);border-radius:4px;padding:8px 12px}
+.empty{border:1.5px dashed var(--line);border-radius:6px;padding:28px 20px;color:var(--muted);text-align:center}
+.empty h2{color:var(--ink);margin-bottom:6px}
+@media (prefers-reduced-motion:no-preference){.shot{animation:in .3s ease both}@keyframes in{from{transform:translateY(4px);opacity:.6}}}
+@media (max-width:480px){.row{grid-template-columns:1fr}.shot{grid-template-columns:48px minmax(0,1fr)}.vid{grid-template-columns:22px 88px minmax(0,1fr)}.vid img{width:88px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="slate" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <h1>YouTube Style Lab</h1>
+      <p class="sub">Paste a video or a channel. The YouTube API pulls the details, Gemini watches the video, and you get its style plus shot-by-shot image and video prompts.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div style="display:grid;gap:16px;min-width:0">
+      <details class="panel" id="keysBox">
+        <summary>API keys <span class="keystate" id="keyState"></span></summary>
+        <div>
+          <label for="ytKey">YouTube Data API key</label>
+          <input type="password" id="ytKey" placeholder="AIza…">
+        </div>
+        <div>
+          <label for="gemKey">Gemini API key</label>
+          <input type="password" id="gemKey" placeholder="AIza…">
+          <p class="hint">Free from aistudio.google.com → Get API key. Gemini is what actually watches the video; the YouTube API only gives titles, tags, thumbnails and stats.</p>
+        </div>
+        <div>
+          <label for="model">Gemini model</label>
+          <input type="text" id="model" value="gemini-3.8-flash">
+        </div>
+        <p class="hint">Keys are saved only in this browser on this device.</p>
+        <button type="button" class="btn" id="saveKeys">Save keys</button>
+      </details>
+
+      <form class="panel" id="findForm" autocomplete="off">
+        <div>
+          <label for="src">Video link or channel</label>
+          <div class="inline">
+            <input type="text" id="src" placeholder="youtube.com/watch?v=… or @ChannelName">
+            <button type="submit" class="btn" id="findBtn">Load</button>
+          </div>
+          <p class="hint">A channel loads its latest videos. Tick up to 3 to learn the channel's style.</p>
+        </div>
+        <div class="vids" id="vids"></div>
+      </form>
+
+      <form class="panel" id="runForm" autocomplete="off">
+        <div>
+          <label for="topic">Your own story or topic</label>
+          <textarea id="topic" placeholder="Optional. Empty = recreate the selected video shot by shot. Or write your story to get new prompts in the same style."></textarea>
+        </div>
+        <div class="row">
+          <div><label for="imgTool">Image tool</label>
+            <select id="imgTool"><option>Gemini (Nano Banana)</option><option>Midjourney</option><option>Leonardo</option><option>Flux / Stable Diffusion</option><option>Ideogram</option></select></div>
+          <div><label for="vidTool">Video tool</label>
+            <select id="vidTool"><option>Kling</option><option>Google Flow / Veo</option><option>Grok Imagine</option><option>GenV / FlixGen</option><option>Runway</option><option>Hailuo</option></select></div>
+        </div>
+        <div class="row">
+          <div><label for="scenes">Number of shots</label>
+            <select id="scenes"><option>6</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
+          <div><label for="aspect">Format</label>
+            <select id="aspect"><option value="16:9">16:9 long video</option><option value="9:16">9:16 Shorts</option></select></div>
+        </div>
+        <div class="row">
+          <div><label for="vo">Voiceover</label>
+            <select id="vo"><option value="hindi">Hindi (conversational)</option><option value="english">English</option><option value="none">None</option></select></div>
+          <div><label for="clip">Watch only first</label>
+            <select id="clip"><option value="0">Whole video</option><option value="180">3 minutes</option><option value="300" selected>5 minutes</option><option value="600">10 minutes</option></select></div>
+        </div>
+        <p class="hint">"Watch only first" saves your free Gemini quota (8 hours of video a day) and is faster on long videos.</p>
+        <button type="submit" class="btn go" id="go">Analyze</button>
+        <button type="button" class="btn ghost" id="stop" hidden>Stop</button>
+        <div class="status" id="status" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <section class="out" id="out">
+      <div class="empty">
+        <h2>No breakdown yet</h2>
+        <p>Add your keys, load a video or channel, then press Analyze. The style guide, character sheets, thumbnail prompt and shot list will appear here.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store={get(k,d){try{const v=localStorage.getItem("ysl-"+k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem("ysl-"+k,JSON.stringify(v))}catch{}}};
+let videos=[], selected=new Set(), ctl=null, current=null;
+
+function setStatus(t,err){const s=$("#status");s.textContent=t||"";s.classList.toggle("err",!!err)}
+
+/* ---------- keys ---------- */
+function loadKeys(){const k=store.get("keys",{});$("#ytKey").value=k.yt||"";$("#gemKey").value=k.gem||"";if(k.model)$("#model").value=k.model;keyState()}
+function keyState(){const ok=$("#ytKey").value&&$("#gemKey").value;$("#keyState").textContent=ok?"· saved":"· needed";$("#keyState").className="keystate"+(ok?" ok":"");$("#keysBox").open=!ok}
+$("#saveKeys").onclick=()=>{store.set("keys",{yt:$("#ytKey").value.trim(),gem:$("#gemKey").value.trim(),model:$("#model").value.trim()});keyState()};
+
+/* ---------- YouTube Data API ---------- */
+const YT="https://www.googleapis.com/youtube/v3/";
+async function yt(path,params){
+  const key=$("#ytKey").value.trim();if(!key)throw new Error("Add your YouTube API key first.");
+  const r=await fetch(YT+path+"?"+new URLSearchParams({...params,key}));const j=await r.json();
+  if(!r.ok)throw new Error("YouTube API: "+(j.error?.message||r.status));return j;
+}
+function parseSrc(s){
+  s=s.trim();
+  const v=s.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([A-Za-z0-9_-]{11})/);if(v)return{video:v[1]};
+  if(/^[A-Za-z0-9_-]{11}$/.test(s))return{video:s};
+  const c=s.match(/channel\/(UC[A-Za-z0-9_-]{22})/)||s.match(/^(UC[A-Za-z0-9_-]{22})$/);if(c)return{channel:c[1]};
+  const h=s.match(/@([A-Za-z0-9._-]+)/);if(h)return{handle:"@"+h[1]};
+  return{search:s};
+}
+function dur(iso){const m=String(iso).match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)||[];const h=+m[1]||0,mi=+m[2]||0,se=+m[3]||0;return{sec:h*3600+mi*60+se,txt:(h?h+":"+String(mi).padStart(2,"0"):mi)+":"+String(se).padStart(2,"0")}}
+const num=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n)};
+async function details(ids){
+  if(!ids.length)return[];
+  const j=await yt("videos",{part:"snippet,contentDetails,statistics",id:ids.join(",")});
+  return j.items.map(it=>({id:it.id,title:it.snippet.title,channel:it.snippet.channelTitle,desc:it.snippet.description||"",tags:it.snippet.tags||[],
+    thumb:(it.snippet.thumbnails.medium||it.snippet.thumbnails.default).url,published:it.snippet.publishedAt,
+    duration:dur(it.contentDetails.duration),views:it.statistics.viewCount,likes:it.statistics.likeCount,comments:it.statistics.commentCount}));
+}
+async function channelVideos(params){
+  const c=await yt("channels",{part:"contentDetails,snippet",...params});
+  if(!c.items?.length)throw new Error("Channel not found.");
+  const up=c.items[0].contentDetails.relatedPlaylists.uploads;
+  const p=await yt("playlistItems",{part:"contentDetails",playlistId:up,maxResults:20});
+  return details(p.items.map(i=>i.contentDetails.videoId));
+}
+$("#findForm").addEventListener("submit",async e=>{
+  e.preventDefault();const s=parseSrc($("#src").value);if(!$("#src").value.trim())return;
+  $("#findBtn").disabled=true;setStatus("Loading from YouTube…");
+  try{
+    if(s.video)videos=await details([s.video]);
+    else if(s.channel)videos=await channelVideos({id:s.channel});
+    else if(s.handle)videos=await channelVideos({forHandle:s.handle});
+    else{const r=await yt("search",{part:"snippet",q:s.search,type:"video",maxResults:10});videos=await details(r.items.map(i=>i.id.videoId))}
+    if(!videos.length)throw new Error("No public videos found.");
+    selected=new Set([videos[0].id]);renderVids();setStatus(`${videos.length} video${videos.length>1?"s":""} loaded.`);
+    store.set("src",$("#src").value);
+  }catch(err){setStatus(err.message,true)}finally{$("#findBtn").disabled=false}
+});
+function renderVids(){
+  $("#vids").innerHTML=videos.map(v=>`<label class="vid${selected.has(v.id)?" sel":""}" data-id="${v.id}">
+    <input type="checkbox" ${selected.has(v.id)?"checked":""} aria-label="Select ${esc(v.title)}">
+    <img src="${esc(v.thumb)}" alt="" loading="lazy">
+    <div><div class="t">${esc(v.title)}</div><div class="m">${v.duration.txt} · ${num(v.views)} views · ${num(v.likes)} likes</div></div></label>`).join("");
+  $("#vids").querySelectorAll(".vid").forEach(el=>el.querySelector("input").onchange=ev=>{
+    const id=el.dataset.id;if(ev.target.checked){if(selected.size>=3){ev.target.checked=false;setStatus("Pick up to 3 videos.",true);return}selected.add(id)}else selected.delete(id);renderVids()});
+}
+
+/* ---------- Gemini ---------- */
+function buildPrompt(vs){
+  const v=k=>$("#"+k).value.trim();const voMode=v("vo");
+  const voRule=voMode==="hindi"?"voiceover: one spoken line in modern conversational Hindi (Hinglish words are fine), written in Roman script so text-to-speech reads it naturally. Not shuddh Hindi."
+    :voMode==="english"?"voiceover: one spoken line in simple English.":"voiceover: empty string.";
+  const meta=vs.map((x,i)=>`VIDEO ${i+1}: "${x.title}" by ${x.channel}
+Length ${x.duration.txt} · ${num(x.views)} views · ${num(x.likes)} likes · ${num(x.comments)} comments · published ${x.published.slice(0,10)}
+Tags: ${x.tags.slice(0,25).join(", ")||"none"}
+Description: ${x.desc.slice(0,1500)}`).join("\n\n");
+  return `You are a video director and AI-prompt engineer. Watch the attached YouTube video${vs.length>1?"s (same channel)":""} closely: art style, colors, lighting, camera moves, cuts and pacing, characters, text overlays, music and sound, voice style, and how the hook works in the first seconds. Use the metadata below too.
+
+${meta}
+
+TASK
+${v("topic")?`Write prompts for the USER'S OWN STORY in the same style. Their story/topic:\n${v("topic")}`:`Recreate the flow of ${vs.length>1?"VIDEO 1":"this video"} as prompts, shot by shot, in the order it happens.`}
+- ${v("scenes")} shots, aspect ratio ${v("aspect")}.
+- Image prompts are tuned for ${v("imgTool")}. Video prompts are tuned for ${v("vidTool")} (image-to-video: describe motion, camera movement and what changes; short and concrete).
+- Every image prompt starts with the same style words so all shots match. Keep characters consistent by name and look.
+- Match the STYLE only. Make everything original; never copy the channel's logo, watermark, names or brand characters.
+- All text in English except the voiceover field. ${voRule}
+- Also explain why the video performs (hook, retention tricks, title/thumbnail pattern) in "why_it_works".
+
+Reply with JSON only, in this shape:
+{"style":{"summary":"2 sentences","art_style":"","color_palette":["#hex","#hex","#hex","#hex","#hex"],"lighting":"","camera":"","character_design":"","mood":"","pacing":"","text_overlays":"","audio_vibe":"","voice_style":""},
+"why_it_works":["",""],
+"master_style_prompt":"","negative_prompt":"",
+"characters":[{"name":"","description":"","sheet_prompt":""}],
+"thumbnail_prompt":"","title_ideas":["","",""],
+"scenes":[{"n":1,"start":"0:00","duration_s":4,"shot":"shot type and angle","description":"","image_prompt":"","video_prompt":"","voiceover":"","onscreen_text":""}]}`;
+}
+async function analyze(vs){
+  const key=$("#gemKey").value.trim();if(!key)throw new Error("Add your Gemini API key first.");
+  const model=($("#model").value.trim()||"gemini-3.8-flash").replace(/^models\//,"");
+  const clip=+$("#clip").value;
+  const parts=vs.map(x=>{const p={file_data:{file_uri:"https://www.youtube.com/watch?v="+x.id}};
+    if(clip&&x.duration.sec>clip)p.video_metadata={start_offset:"0s",end_offset:clip+"s"};return p});
+  parts.push({text:buildPrompt(vs)});
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
+    method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json","x-goog-api-key":key},
+    body:JSON.stringify({contents:[{parts}],generationConfig:{responseMimeType:"application/json",temperature:.7}})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error("Gemini: "+(j.error?.message||r.status));
+  const text=(j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+  if(!text)throw new Error("Gemini returned nothing"+(j.promptFeedback?.blockReason?` (${j.promptFeedback.blockReason})`:"")+". Try another video.");
+  let out;try{out=JSON.parse(text)}catch{const m=text.match(/\{[\s\S]*\}/);if(!m)throw new Error("Gemini's answer wasn't readable. Press Analyze again.");out=JSON.parse(m[0])}
+  if(!Array.isArray(out.scenes))throw new Error("Gemini's answer had no shots. Press Analyze again.");
+  out._videos=vs.map(x=>({id:x.id,title:x.title,channel:x.channel}));return out;
+}
+$("#runForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const vs=videos.filter(v=>selected.has(v.id));
+  if(!vs.length){setStatus("Load a video or channel and select at least one video.",true);return}
+  ctl=new AbortController();$("#go").disabled=true;$("#stop").hidden=false;
+  setStatus(`Gemini is watching ${vs.length>1?vs.length+" videos":"the video"}… this can take 1–3 minutes.`);
+  try{const r=await analyze(vs);render(r);store.set("last",r);setStatus("Done. Copy each prompt into your tools.")}
+  catch(err){setStatus(err.name==="AbortError"?"Stopped.":err.message,err.name!=="AbortError")}
+  finally{$("#go").disabled=false;$("#stop").hidden=true}
+});
+$("#stop").onclick=()=>ctl?.abort();
+["topic","imgTool","vidTool","scenes","aspect","vo","clip"].forEach(k=>{const el=$("#"+k);const v=store.get("f-"+k,null);if(v!=null)el.value=v;el.addEventListener("change",()=>store.set("f-"+k,el.value))});
+
+/* ---------- render ---------- */
+function pk(label,text){return `<div class="pk"><div class="head"><span class="lbl" style="margin:0">${esc(label)}</span><button type="button" class="copy" data-copy="${esc(text)}">Copy</button></div><div class="prompt">${esc(text)}</div></div>`}
+function render(r){
+  current=r;const s=r.style||{};
+  const facts=[["Art style",s.art_style],["Lighting",s.lighting],["Camera",s.camera],["Characters",s.character_design],["Mood",s.mood],["Pacing",s.pacing],["On-screen text",s.text_overlays],["Sound",s.audio_vibe],["Voice",s.voice_style]].filter(x=>x[1]);
+  $("#out").innerHTML=`
+  ${(r._videos||[]).length?`<div class="note">From: ${r._videos.map(v=>`<a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>`).join(" · ")}</div>`:""}
+  <div class="bar"><h2>Style breakdown</h2><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button type="button" class="btn ghost" id="copyAll">Copy all prompts</button>
+    <button type="button" class="btn ghost" id="dlTxt">Download .txt</button>
+    <button type="button" class="btn ghost" id="dlJson">Download .json</button></div></div>
+  <p style="margin:0;max-width:70ch">${esc(s.summary)}</p>
+  ${(s.color_palette||[]).length?`<div><span class="lbl">Palette</span><div class="swatches">${s.color_palette.map(c=>`<span><b style="background:${/^#[0-9a-f]{3,8}$/i.test(c)?c:"transparent"}"></b>${esc(c)}</span>`).join("")}</div></div>`:""}
+  <div class="grid2">${facts.map(([k,v])=>`<div><span class="lbl">${k}</span><p>${esc(v)}</p></div>`).join("")}</div>
+  ${(r.why_it_works||[]).length?`<div><span class="lbl">Why it works</span><ul class="titles">${r.why_it_works.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`:""}
+  ${pk("Master style prompt — start every image with this",r.master_style_prompt)}
+  ${r.negative_prompt?pk("Negative prompt",r.negative_prompt):""}
+  ${(r.characters||[]).length?`<div class="chars"><h3>Characters</h3>${r.characters.map(c=>pk(c.name+" — "+(c.description||""),c.sheet_prompt)).join("")}</div>`:""}
+  ${r.thumbnail_prompt?pk("Thumbnail prompt",r.thumbnail_prompt):""}
+  ${(r.title_ideas||[]).length?`<div><span class="lbl">Title ideas</span><ul class="titles">${r.title_ideas.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`:""}
+  <div class="bar"><h2>Shot list</h2><span class="tag">${r.scenes.length} shots · ${r.scenes.reduce((a,b)=>a+(+b.duration_s||0),0)} s</span></div>
+  ${r.scenes.map((sc,i)=>`<article class="shot"><div class="num"><small>SHOT</small><b>${String(sc.n||i+1).padStart(2,"0")}</b><small>${esc(sc.duration_s)}s</small>${sc.start?`<small>@${esc(sc.start)}</small>`:""}</div>
+   <div class="body"><div class="meta"><span>${esc(sc.shot)}</span></div><div>${esc(sc.description)}</div>
+   ${pk("Image prompt",sc.image_prompt)}${pk("Video prompt",sc.video_prompt)}
+   ${sc.voiceover?`<div><span class="lbl">Voiceover</span><div class="vo">${esc(sc.voiceover)}</div></div>`:""}
+   ${sc.onscreen_text?`<div class="meta"><span>On screen: ${esc(sc.onscreen_text)}</span></div>`:""}</div></article>`).join("")}`;
+  $("#copyAll").onclick=e=>copy(asText(r),e.target);
+  $("#dlTxt").onclick=()=>save("video-prompts.txt",asText(r),"text/plain");
+  $("#dlJson").onclick=()=>save("video-prompts.json",JSON.stringify(r,null,2),"application/json");
+}
+function asText(r){
+  const L=["MASTER STYLE PROMPT\n"+r.master_style_prompt,"NEGATIVE PROMPT\n"+(r.negative_prompt||"")];
+  (r.characters||[]).forEach(c=>L.push(`CHARACTER: ${c.name}\n${c.sheet_prompt}`));
+  if(r.thumbnail_prompt)L.push("THUMBNAIL\n"+r.thumbnail_prompt);
+  r.scenes.forEach(s=>L.push(`SHOT ${s.n} (${s.duration_s}s, ${s.shot})\nIMAGE: ${s.image_prompt}\nVIDEO: ${s.video_prompt}${s.voiceover?"\nVOICEOVER: "+s.voiceover:""}${s.onscreen_text?"\nTEXT: "+s.onscreen_text:""}`));
+  return L.join("\n\n");
+}
+function save(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.append(a);a.click();a.remove()}
+async function copy(text,btn){
+  const o=btn.textContent;
+  try{await navigator.clipboard.writeText(text);btn.textContent="Copied"}
+  catch{const t=document.createElement("textarea");t.value=text;document.body.append(t);t.select();try{document.execCommand("copy");btn.textContent="Copied"}catch{btn.textContent="Copy failed"}t.remove()}
+  setTimeout(()=>btn.textContent=o,1200);
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-copy]");if(b)copy(b.dataset.copy,b)});
+
+/* ---------- boot ---------- */
+loadKeys();$("#src").value=store.get("src","");
+const last=store.get("last",null);if(last&&Array.isArray(last.scenes))render(last);
+</script>
+</body>
+</html>
