@@ -56,8 +56,10 @@ button{font:inherit;cursor:pointer}
 .status.err{color:var(--danger)}
 .vids{display:grid;gap:8px}
 .vid{display:grid;grid-template-columns:22px 112px minmax(0,1fr);gap:10px;align-items:start;border:1px solid var(--line);border-radius:4px;padding:8px;background:var(--bg);cursor:pointer}
+label.vid{text-transform:none;letter-spacing:normal;font-family:var(--body);font-size:inherit;color:var(--ink);margin:0}
 .vid.sel{border-color:var(--accent);background:var(--accent-soft)}
-.vid img{width:112px;aspect-ratio:16/9;object-fit:cover;border-radius:3px;display:block}
+.vid img,.vid video{width:112px;aspect-ratio:16/9;object-fit:cover;border-radius:3px;display:block;background:var(--line)}
+input[type=file]{width:100%;font:inherit;font-size:13px;color:var(--muted)}
 .vid .t{font-size:13.5px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
 .vid .m{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
 .vid input{margin-top:4px;accent-color:var(--accent)}
@@ -90,7 +92,7 @@ ul.titles{margin:0;padding-left:18px}
 .empty{border:1.5px dashed var(--line);border-radius:6px;padding:28px 20px;color:var(--muted);text-align:center}
 .empty h2{color:var(--ink);margin-bottom:6px}
 @media (prefers-reduced-motion:no-preference){.shot{animation:in .3s ease both}@keyframes in{from{transform:translateY(4px);opacity:.6}}}
-@media (max-width:480px){.row{grid-template-columns:1fr}.shot{grid-template-columns:48px minmax(0,1fr)}.vid{grid-template-columns:22px 88px minmax(0,1fr)}.vid img{width:88px}}
+@media (max-width:480px){.row{grid-template-columns:1fr}.shot{grid-template-columns:48px minmax(0,1fr)}.vid{grid-template-columns:22px 88px minmax(0,1fr)}.vid img,.vid video{width:88px}}
 </style>
 </head>
 <body>
@@ -133,6 +135,11 @@ ul.titles{margin:0;padding-left:18px}
           </div>
           <p class="hint">A channel loads its latest videos. Tick up to 3 to learn the channel's style.</p>
         </div>
+        <div>
+          <label for="file">Or upload a video file</label>
+          <input type="file" id="file" accept="video/*">
+          <p class="hint">For a video saved on your phone (WhatsApp, Instagram, downloads). Only needs the Gemini key. Up to 2 GB.</p>
+        </div>
         <div class="vids" id="vids"></div>
       </form>
 
@@ -149,7 +156,7 @@ ul.titles{margin:0;padding-left:18px}
         </div>
         <div class="row">
           <div><label for="scenes">Number of shots</label>
-            <select id="scenes"><option>6</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
+            <select id="scenes"><option>6</option><option selected>10</option><option>15</option><option>20</option><option>30</option><option>40</option><option>60</option></select></div>
           <div><label for="aspect">Format</label>
             <select id="aspect"><option value="16:9">16:9 long video</option><option value="9:16">9:16 Shorts</option></select></div>
         </div>
@@ -232,11 +239,21 @@ $("#findForm").addEventListener("submit",async e=>{
     store.set("src",$("#src").value);
   }catch(err){setStatus(err.message,true)}finally{$("#findBtn").disabled=false}
 });
+$("#file").addEventListener("change",()=>{
+  const f=$("#file").files[0];if(!f)return;
+  if(f.size>2e9){setStatus("File is over 2 GB. Trim it first.",true);return}
+  const url=URL.createObjectURL(f);const probe=document.createElement("video");probe.preload="metadata";
+  const add=sec=>{sec=Math.round(sec||0);const m=Math.floor(sec/60),s=sec%60,h=Math.floor(m/60);
+    videos=[{id:"local-"+Date.now(),local:true,file:f,url,title:f.name,channel:"Your upload",desc:"",tags:[],thumb:"",
+      duration:{sec,txt:(h?h+":"+String(m%60).padStart(2,"0"):m)+":"+String(s).padStart(2,"0")}}];
+    selected=new Set([videos[0].id]);renderVids();setStatus(`Video file ready (${(f.size/1e6).toFixed(1)} MB). Press Analyze.`)};
+  probe.onloadedmetadata=()=>add(probe.duration);probe.onerror=()=>add(0);probe.src=url;
+});
 function renderVids(){
   $("#vids").innerHTML=videos.map(v=>`<label class="vid${selected.has(v.id)?" sel":""}" data-id="${v.id}">
     <input type="checkbox" ${selected.has(v.id)?"checked":""} aria-label="Select ${esc(v.title)}">
-    <img src="${esc(v.thumb)}" alt="" loading="lazy">
-    <div><div class="t">${esc(v.title)}</div><div class="m">${v.duration.txt} · ${num(v.views)} views · ${num(v.likes)} likes</div></div></label>`).join("");
+    ${v.local?`<video src="${esc(v.url)}#t=5" muted playsinline preload="metadata"></video>`:`<img src="${esc(v.thumb)}" alt="" loading="lazy">`}
+    <div><div class="t">${esc(v.title)}</div><div class="m">${v.duration.txt}${v.local?" · "+(v.file.size/1e6).toFixed(1)+" MB file":` · ${num(v.views)} views · ${num(v.likes)} likes`}</div></div></label>`).join("");
   $("#vids").querySelectorAll(".vid").forEach(el=>el.querySelector("input").onchange=ev=>{
     const id=el.dataset.id;if(ev.target.checked){if(selected.size>=3){ev.target.checked=false;setStatus("Pick up to 3 videos.",true);return}selected.add(id)}else selected.delete(id);renderVids()});
 }
@@ -246,7 +263,7 @@ function buildPrompt(vs){
   const v=k=>$("#"+k).value.trim();const voMode=v("vo");
   const voRule=voMode==="hindi"?"voiceover: one spoken line in modern conversational Hindi (Hinglish words are fine), written in Roman script so text-to-speech reads it naturally. Not shuddh Hindi."
     :voMode==="english"?"voiceover: one spoken line in simple English.":"voiceover: empty string.";
-  const meta=vs.map((x,i)=>`VIDEO ${i+1}: "${x.title}" by ${x.channel}
+  const meta=vs.map((x,i)=>x.local?`VIDEO ${i+1}: uploaded file "${x.title}", length ${x.duration.txt}. No YouTube metadata; judge everything from the video itself.`:`VIDEO ${i+1}: "${x.title}" by ${x.channel}
 Length ${x.duration.txt} · ${num(x.views)} views · ${num(x.likes)} likes · ${num(x.comments)} comments · published ${x.published.slice(0,10)}
 Tags: ${x.tags.slice(0,25).join(", ")||"none"}
 Description: ${x.desc.slice(0,1500)}`).join("\n\n");
@@ -275,7 +292,8 @@ async function analyze(vs){
   const key=$("#gemKey").value.trim();if(!key)throw new Error("Add your Gemini API key first.");
   const model=($("#model").value.trim()||"gemini-3.8-flash").replace(/^models\//,"");
   const clip=+$("#clip").value;
-  const parts=vs.map(x=>{const p={file_data:{file_uri:"https://www.youtube.com/watch?v="+x.id}};
+  for(const x of vs)if(x.local&&!x.uri)x.uri=await uploadFile(x.file,key);
+  const parts=vs.map(x=>{const p={file_data:x.local?{file_uri:x.uri,mime_type:x.file.type||"video/mp4"}:{file_uri:"https://www.youtube.com/watch?v="+x.id}};
     if(clip&&x.duration.sec>clip)p.video_metadata={start_offset:"0s",end_offset:clip+"s"};return p});
   parts.push({text:buildPrompt(vs)});
   const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
@@ -287,7 +305,32 @@ async function analyze(vs){
   if(!text)throw new Error("Gemini returned nothing"+(j.promptFeedback?.blockReason?` (${j.promptFeedback.blockReason})`:"")+". Try another video.");
   let out;try{out=JSON.parse(text)}catch{const m=text.match(/\{[\s\S]*\}/);if(!m)throw new Error("Gemini's answer wasn't readable. Press Analyze again.");out=JSON.parse(m[0])}
   if(!Array.isArray(out.scenes))throw new Error("Gemini's answer had no shots. Press Analyze again.");
-  out._videos=vs.map(x=>({id:x.id,title:x.title,channel:x.channel}));return out;
+  out._videos=vs.map(x=>({id:x.local?"":x.id,title:x.title,channel:x.channel}));return out;
+}
+/* Upload a local video to the Gemini Files API (kept by Google for 48 h), then wait until it's processed. */
+async function uploadFile(file,key){
+  const GB="https://generativelanguage.googleapis.com";const type=file.type||"video/mp4";
+  setStatus("Uploading video to Gemini… 0%");
+  const start=await fetch(GB+"/upload/v1beta/files",{method:"POST",signal:ctl.signal,headers:{"x-goog-api-key":key,"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start",
+    "X-Goog-Upload-Header-Content-Length":String(file.size),"X-Goog-Upload-Header-Content-Type":type,"Content-Type":"application/json"},
+    body:JSON.stringify({file:{display_name:file.name.slice(0,100)}})});
+  const upUrl=start.headers.get("x-goog-upload-url");
+  if(!start.ok||!upUrl){const j=await start.json().catch(()=>({}));throw new Error("Gemini upload: "+(j.error?.message||start.status))}
+  const j=await new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open("POST",upUrl);
+    x.setRequestHeader("X-Goog-Upload-Command","upload, finalize");x.setRequestHeader("X-Goog-Upload-Offset","0");
+    x.upload.onprogress=e=>e.lengthComputable&&setStatus(`Uploading video to Gemini… ${Math.round(e.loaded/e.total*100)}%`);
+    x.onload=()=>{try{const r=JSON.parse(x.responseText);x.status<300?res(r):rej(new Error("Gemini upload: "+(r.error?.message||x.status)))}catch{rej(new Error("Gemini upload failed ("+x.status+")"))}};
+    x.onerror=()=>rej(new Error("Upload failed. Check your internet and try again."));
+    ctl.signal.addEventListener("abort",()=>{x.abort();rej(new DOMException("Stopped","AbortError"))});x.send(file)});
+  let f=j.file;
+  for(let i=0;f.state==="PROCESSING"&&i<120;i++){
+    setStatus("Gemini is processing the video…");await new Promise(r=>setTimeout(r,5000));
+    const r=await fetch(GB+"/v1beta/"+f.name,{headers:{"x-goog-api-key":key},signal:ctl.signal});f=await r.json();
+    if(!r.ok)throw new Error("Gemini: "+(f.error?.message||r.status));
+  }
+  if(f.state!=="ACTIVE")throw new Error("Gemini couldn't process this video ("+(f.state||"unknown")+"). Try a shorter or MP4 file.");
+  setStatus("Gemini is watching the video… this can take 1–3 minutes.");
+  return f.uri;
 }
 $("#runForm").addEventListener("submit",async e=>{
   e.preventDefault();
@@ -296,7 +339,7 @@ $("#runForm").addEventListener("submit",async e=>{
   ctl=new AbortController();$("#go").disabled=true;$("#stop").hidden=false;
   setStatus(`Gemini is watching ${vs.length>1?vs.length+" videos":"the video"}… this can take 1–3 minutes.`);
   try{const r=await analyze(vs);render(r);store.set("last",r);setStatus("Done. Copy each prompt into your tools.")}
-  catch(err){setStatus(err.name==="AbortError"?"Stopped.":err.message,err.name!=="AbortError")}
+  catch(err){setStatus(err.name==="AbortError"?"Stopped.":/failed to fetch|load failed|network/i.test(err.message)?"Couldn't reach Google. Check your internet and try again.":err.message,err.name!=="AbortError")}
   finally{$("#go").disabled=false;$("#stop").hidden=true}
 });
 $("#stop").onclick=()=>ctl?.abort();
@@ -308,7 +351,7 @@ function render(r){
   current=r;const s=r.style||{};
   const facts=[["Art style",s.art_style],["Lighting",s.lighting],["Camera",s.camera],["Characters",s.character_design],["Mood",s.mood],["Pacing",s.pacing],["On-screen text",s.text_overlays],["Sound",s.audio_vibe],["Voice",s.voice_style]].filter(x=>x[1]);
   $("#out").innerHTML=`
-  ${(r._videos||[]).length?`<div class="note">From: ${r._videos.map(v=>`<a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>`).join(" · ")}</div>`:""}
+  ${(r._videos||[]).length?`<div class="note">From: ${r._videos.map(v=>v.id?`<a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>`:esc(v.title)).join(" · ")}</div>`:""}
   <div class="bar"><h2>Style breakdown</h2><div style="display:flex;gap:6px;flex-wrap:wrap">
     <button type="button" class="btn ghost" id="copyAll">Copy all prompts</button>
     <button type="button" class="btn ghost" id="dlTxt">Download .txt</button>
